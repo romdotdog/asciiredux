@@ -4,28 +4,40 @@ from sys import argv
 
 from os import mkdir
 from os.path import exists
-from itertools import chain
 
 from PIL import Image, ImageFont, ImageDraw
 
+fontFallback = "C:/Windows/Fonts/Arial.ttf"
 def generate(fontName, pointSize=12):
+    pilFontFallback = ImageFont.truetype(fontFallback, pointSize)
     pilFont = ImageFont.truetype(fontName, pointSize)
+
+    fontToolsFontFallback = TTFont(fontFallback)
+    cmapFallback = fontToolsFontFallback['cmap']
+
     fontToolsFont = TTFont(fontName)
     cmap = fontToolsFont['cmap']
 
     t = cmap.getcmap(3, 1).cmap
     s = fontToolsFont.getGlyphSet()
+
+    tFallback = cmapFallback.getcmap(3, 1).cmap
+    sFallback = fontToolsFontFallback.getGlyphSet()
+
+    units_per_emFallback = fontToolsFontFallback['head'].unitsPerEm
     units_per_em = fontToolsFont['head'].unitsPerEm
 
     # https://stackoverflow.com/questions/4190667/how-to-get-width-of-a-truetype-font-character-in-1200ths-of-an-inch-with-python
     def getTextWidth(c: int):
         if c in t and t[c] in s:
             return s[t[c]].width*float(pointSize)/units_per_em
+        if c in tFallback and tFallback[c] in sFallback:
+            return sFallback[tFallback[c]].width*float(pointSize)/units_per_emFallback
 
     # Range is exclusive, so + 1
     spaces = [0x20, *range(0x2000, 0x200A + 1)]
-    spaceWidth = {getTextWidth(x): chr(x) for x in spaces}
-    maxGridSize = round(getTextWidth(87))
+    spaceWidth = {chr(x): getTextWidth(x) for x in spaces}
+    maxGridSize = round(getTextWidth(9608))
     lineHeight = 22
 
     if not exists("img/"):
@@ -34,16 +46,15 @@ def generate(fontName, pointSize=12):
     with open("img/meta.json", "w+") as outf:
         dump({"spaces": spaceWidth, "maxGridSize": maxGridSize}, outf)
 
-    # https://stackoverflow.com/questions/30470079/emoji-value-range & https://stackoverflow.com/questions/30964449/iterate-two-ranges-in-for-loop
-    nonEmoji = chain(range(0, 169), range(175, 8205)) #, range(12954, 126980), range(127570, 127744), range(129751, 129995))
-    
-    for c in nonEmoji:
+    for c in range(0, 129995):
         size = getTextWidth(c)
         if size is None or size > maxGridSize:
             continue
-        image = Image.new("RGBA", (maxGridSize, lineHeight))
+
+        image = Image.new("L", (maxGridSize, lineHeight), (0))
         draw = ImageDraw.Draw(image)
-        draw.text((0, 0), chr(c), font=pilFont, fill=(0, 0, 0))
+
+        draw.text((0, 0), chr(c), font=(pilFont if c in t and t[c] in s else pilFontFallback), fill=(255))
 
         bbox = image.getbbox()
         if not bbox: # Image is empty
