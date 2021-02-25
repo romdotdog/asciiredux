@@ -48,6 +48,8 @@ def fillSpace(pt):
 if __name__ == "__main__":
     util = Util(database.fontName, database.pointSize)
     image = Image.open(argv[1]).convert("L").point(lambda p: above_threshold if p > threshold else below_threshold)
+    bbox = image.getbbox()
+    image = image.crop(bbox)
 
     image.show()
 
