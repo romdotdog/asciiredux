@@ -1,4 +1,6 @@
-from fontTools.ttLib import TTFont
+import unicodedata
+import util
+from unicodedata import combining
 from json import dump
 from sys import argv
 
@@ -7,54 +9,40 @@ from os.path import exists
 
 from PIL import Image, ImageFont, ImageDraw
 
-fontFallback = "C:/Windows/Fonts/Arial.ttf"
+def isRTL(c):
+    prop = unicodedata.bidirectional(c)
+    return "AL" in prop or "R" in prop
+
 def generate(fontName, pointSize=12):
-    pilFontFallback = ImageFont.truetype(fontFallback, pointSize)
+    pilFontFallback = ImageFont.truetype(util.fontFallback, pointSize)
     pilFont = ImageFont.truetype(fontName, pointSize)
 
-    fontToolsFontFallback = TTFont(fontFallback)
-    cmapFallback = fontToolsFontFallback['cmap']
-
-    fontToolsFont = TTFont(fontName)
-    cmap = fontToolsFont['cmap']
-
-    t = cmap.getcmap(3, 1).cmap
-    s = fontToolsFont.getGlyphSet()
-
-    tFallback = cmapFallback.getcmap(3, 1).cmap
-    sFallback = fontToolsFontFallback.getGlyphSet()
-
-    units_per_emFallback = fontToolsFontFallback['head'].unitsPerEm
-    units_per_em = fontToolsFont['head'].unitsPerEm
-
-    # https://stackoverflow.com/questions/4190667/how-to-get-width-of-a-truetype-font-character-in-1200ths-of-an-inch-with-python
-    def getTextWidth(c: int):
-        if c in t and t[c] in s:
-            return s[t[c]].width*float(pointSize)/units_per_em
-        if c in tFallback and tFallback[c] in sFallback:
-            return sFallback[tFallback[c]].width*float(pointSize)/units_per_emFallback
+    Util = util.Util(fontName, pointSize)
 
     # Range is exclusive, so + 1
     spaces = [0x20, *range(0x2000, 0x200A + 1)]
-    spaceWidth = {chr(x): getTextWidth(x) for x in spaces}
-    maxGridSize = round(getTextWidth(9608))
+    spaceWidth = {chr(x): Util.getTextWidth(x) for x in spaces}
+    maxGridSize = round(Util.getTextWidth(9608))
     lineHeight = 22
 
     if not exists("img/"):
         mkdir("img")
 
     with open("img/meta.json", "w+") as outf:
-        dump({"spaces": spaceWidth, "maxGridSize": maxGridSize}, outf)
+        dump({"spaces": spaceWidth, "maxGridSize": maxGridSize,
+              "fontName": fontName, "pointSize": pointSize}, outf)
 
     for c in range(0, 129995):
-        size = getTextWidth(c)
-        if size is None or size > maxGridSize:
+        size = Util.getTextWidth(c)
+        ch = chr(c)
+        if size is None or size > maxGridSize or combining(ch) or isRTL(ch):
             continue
 
         image = Image.new("L", (maxGridSize, lineHeight), (0))
         draw = ImageDraw.Draw(image)
 
-        draw.text((0, 0), chr(c), font=(pilFont if c in t and t[c] in s else pilFontFallback), fill=(255))
+        draw.text((0, 0), ch, font=(
+            pilFont if c in Util.t and Util.t[c] in Util.s else pilFontFallback), fill=(255))
 
         bbox = image.getbbox()
         if not bbox: # Image is empty

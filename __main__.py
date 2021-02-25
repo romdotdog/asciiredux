@@ -1,4 +1,4 @@
-from cv2 import data
+from util import Util
 import database
 from sys import argv
 from PIL import Image
@@ -7,7 +7,7 @@ from os.path import splitext, basename
 import operator
 
 scale = 0.43
-cols = 80
+cols = 100
 
 invert = True
 threshold = 127
@@ -46,13 +46,18 @@ def fillSpace(pt):
 
 # based on https://www.geeksforgeeks.org/converting-image-ascii-image-python/
 if __name__ == "__main__":
+    util = Util(database.fontName, database.pointSize)
     image = Image.open(argv[1]).convert("L").point(lambda p: above_threshold if p > threshold else below_threshold)
+
+    image.show()
 
     W, H = image.size[0], image.size[1]
 
     w = W/cols
     h = w/scale
     rows = int(H/h)
+
+    print((cols, rows))
 
     if cols > W or rows > H:
         print("Image too small")
@@ -80,15 +85,15 @@ if __name__ == "__main__":
             # crop image to extract tile
             img = image.crop((x1, y1, x2, y2))
             if not img.getbbox():
-                aimg[j] += fillSpace(database.maxGridSize)
+                aimg[j] += " "#fillSpace(database.maxGridSize)
                 continue
-            img.show()
 
             rankings = database.compare(np.array(img))
             bestComparison = min(rankings.items(), key=operator.itemgetter(1))[0]
             fileNameWithoutExtension = splitext(basename(bestComparison))[0]
-            print(fileNameWithoutExtension)
-            aimg[j] += chr(int(fileNameWithoutExtension))
+
+            c = int(fileNameWithoutExtension)
+            aimg[j] += chr(c)# + fillSpace(database.maxGridSize - util.getTextWidth(c))
 
 
     with open("out.txt", "w+", encoding="utf8") as outf:

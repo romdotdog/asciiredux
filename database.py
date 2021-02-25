@@ -11,6 +11,8 @@ with open("img/meta.json", "r") as outf:
 spaces = {v: k for k, v in meta["spaces"].items()}
 spaceMeasurements: list = list(spaces.keys())
 maxGridSize: int = meta["maxGridSize"]
+pointSize: int = meta["pointSize"]
+fontName: str = meta["fontName"]
 
 def compare(contour):
     return {path: cv2.matchShapes(contour, glyph, 1, 0.0) for path, glyph in glyphs.items()}
