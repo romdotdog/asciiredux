@@ -20,17 +20,11 @@ def generate(fontName, pointSize=12):
     Util = util.Util(fontName, pointSize)
 
     # Range is exclusive, so + 1
-    spaces = [0x20, *range(0x2000, 0x200A + 1)]
-    spaceWidth = {chr(x): Util.getTextWidth(x) for x in spaces}
     maxGridSize = round(Util.getTextWidth(9608))
     lineHeight = int(16.5)# 22
 
     if not exists("img/"):
         mkdir("img")
-
-    with open("img/meta.json", "w+") as outf:
-        dump({"spaces": spaceWidth, "maxGridSize": maxGridSize,
-              "fontName": fontName, "pointSize": pointSize}, outf)
 
     for c in range(0, 129995):
         size = Util.getTextWidth(c)
