@@ -35,7 +35,7 @@ def generate(fontName, pointSize=12):
         dump({"spaces": spaceWidth, "maxGridSize": maxGridSize}, outf)
 
     # https://stackoverflow.com/questions/30470079/emoji-value-range & https://stackoverflow.com/questions/30964449/iterate-two-ranges-in-for-loop
-    nonEmoji = chain(range(0, 169), range(175, 8205), range(12954, 126980), range(127570, 127744), range(129751, 129995))
+    nonEmoji = chain(range(0, 169), range(175, 8205)) #, range(12954, 126980), range(127570, 127744), range(129751, 129995))
     
     for c in nonEmoji:
         size = getTextWidth(c)
@@ -46,9 +46,10 @@ def generate(fontName, pointSize=12):
         draw.text((0, 0), chr(c), font=pilFont, fill=(0, 0, 0))
 
         bbox = image.getbbox()
-        if not bbox:
+        if not bbox: # Image is empty
             continue
-        image = image.crop((0, bbox[1], maxGridSize, bbox[3]))
+
+        image = image.crop((0, 0, maxGridSize, bbox[1] + bbox[3])) # Create even spacing between top and bottom of glyph
         image.save("img/{}.png".format(c))
         image.close()
 
