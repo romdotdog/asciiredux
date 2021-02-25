@@ -23,7 +23,7 @@ def generate(fontName, pointSize=12):
     spaces = [0x20, *range(0x2000, 0x200A + 1)]
     spaceWidth = {chr(x): Util.getTextWidth(x) for x in spaces}
     maxGridSize = round(Util.getTextWidth(9608))
-    lineHeight = 22
+    lineHeight = int(16.5)# 22
 
     if not exists("img/"):
         mkdir("img")
@@ -48,7 +48,6 @@ def generate(fontName, pointSize=12):
         if not bbox: # Image is empty
             continue
 
-        image = image.crop((0, 0, maxGridSize, bbox[1] + bbox[3])) # Create even spacing between top and bottom of glyph
         image.save("img/{}.png".format(c))
         image.close()
 

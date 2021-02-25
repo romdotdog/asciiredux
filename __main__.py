@@ -7,10 +7,10 @@ from os.path import splitext, basename
 import operator
 
 scale = 0.43
-cols = 100
+cols = 200
 
 invert = True
-threshold = 127
+threshold = 200
 above_threshold = 255 if invert else 0
 below_threshold = 0 if invert else 255
 
